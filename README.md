@@ -1,6 +1,5 @@
 # data-sourcing-challenge
 
-
 ## Technology Used 
 
 | Technology Used | Resource URL | 
@@ -9,61 +8,72 @@
 | Git | [https://git-scm.com/](https://git-scm.com/) | 
 
 ## Description 
-In this project I created an interactive ordering system for a food truck menu using python, that allows users to select items for purchase and after checkout receive a receipt with a subtotal for the items selected.
+In this project I extracted data from the NASA API, specifically from two sources—its GST data and its CME data—then merge the data together and compute the average time it takes for a CME to cause a GST. Later, this data can be used with Machine Learning models to create predictions.
 
 ## Code Example 
 
-<---- First we initialize the order list using the following empty list ----->
+<---- We apply the extract_activityID_from_dict function to each row in the 'linkedEvents' column and created a new column called 'CME_ActivityID' using loc indexer, removing rows with missing CME_ActivityID, then define the extract_activityID_from_dict function, since we can't assign them to CMEs----->
          
-         customer_order = []
-
- <---- In this part of the code we launch the store and present a greeting to the customer ----->
-
-         print("Welcome to the variety food truck.")
-
-<---- Next we implement the main loop to handle the customer's order process ----->
-
-         place_order = True
-         while place_order:
-
-<------ Here we prompt the customer asking them from which menu category they want to order ------>
-
-         print("\nFrom which menu would you like to order?")
-
-<----- Then we display menu categories and store them in a dictionary ------->
-
-     i = 1
-     menu_items = {}
-     for key in menu.keys():
-        print(f"{i}: {key}")
-        menu_items[i] = key
-        i += 1
-
-<-----  User is then prompted for menu selection and inputs are saved ------>
-
-         menu_selection = input("Type menu number: ")
-
-<------ Check if the customer's input is a number and Convert menu_selection to integer-------->
-         if menu_selection.isdigit():
-         menu_selection = int(menu_selection)`
-
-<---- This checks if the string contains only numeric characters (digits) and  returns True if the string consists only of digits, otherwise False. This condition ensures that the input from the user is a valid number, preventing errors if the user enters non-numeric characters (like "abc" or "1a2"). If the input string passes the isdigit() check, this line converts menu_selection from a string (e.g., "3") to an integer (3) using the int() function.
-Converting it to an integer allows you to perform mathematical operations, comparisons, or use it in contexts where an integer is expected. ----->
+     def extract_activityID_from_dict(event_dict):
+         try:
+        
+         activity_id = event_dict['activityID']
+         return activity_id
+     except KeyError as e:
+       
+         print(f"KeyError: The key 'activityID' was not found in the dictionary. Error: {e}")
+         return None  # Return None if the key is missing
+     except Exception as e:
+       
+         print(f"An error occurred: {e}")
+         return None
 
 
+     gst_df_exploded['CME_ActivityID'] = gst_df_exploded['linkedEvents'].apply(lambda event: extract_activityID_from_dict(event))
+
+ 
+     gst_df_exploded_cleaned = gst_df_exploded.dropna(subset=['CME_ActivityID'])
 
 
+     gst_df_exploded_cleaned.reset_index(drop=True, inplace=True)
 
 
+     gst_df_exploded_cleaned.head()
 
 
-This project was a challenge due to the learning curve with Python's syntax. But with the aid of W3 schools and ChatGPT anything that I was unfamiliar with I was able to gain understanding about through these sources. Thankfully I have experience with loops and iteration from the past so I was able to call on that knowledge in this project.
+ <---- We converted gst_json to a Pandas DataFrame Keep only the columns: activityID, startTime, linkedEvents ----->
+
+     gst_df = pd.json_normalize(gst_json)
+
+     gst_df['activityID'] = gst_df['linkedEvents'].apply(lambda x: x[0]['activityID'] if x else None)
+
+     gst_df = gst_df[["activityID", "startTime", "linkedEvents"]]
+
+     gst_df.head()
+
+
+<---- We converted the 'GST_ActivityID' column to string format then converted startTime to datetime format. renaming startTime to startTime_CME and activityID to cmeID, before dropping linkedEvents ----->
+
+        
+     cme_df_cleaned['GST_ActivityID'] = cme_df_cleaned['GST_ActivityID'].astype(str)
+
+     cme_df_cleaned['startTime'] = pd.to_datetime(cme_df_cleaned['startTime'], errors='coerce')
+
+     cme_df_cleaned.rename(columns={'startTime': 'startTime_CME', 'activityID': 'cmeID'}, inplace=True)
+
+     cme_df_cleaned.drop(columns=['linkedEvents'], inplace=True)
+
+
+     cme_df_cleaned.head()
+
+
+## Challenges
+This proved to be an exceptional challenge.. no pun intended. I was stuck at almost every step, due to the complexity of how to expand information from certain rows in the table, and merging two data frames. The learning curve with Panda's syntax. But with the aid of W3 schools and ChatGPT anything that I was unfamiliar with I was able to gain understanding about through these sources. This one hurt.
 
 
 
 ## Learning Points 
-I learned that Google, W3, MDN, Youtube and ChatGPT are my best friends that I will always keep very close. 
-
+Best friends as follows: Google, W3, Geeks for geeks, Youtube and ChatGPT
 
 ## Author Info
 Armand Araujo
